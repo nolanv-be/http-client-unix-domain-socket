@@ -1,6 +1,11 @@
 use std::path::PathBuf;
 
-use axum::{Router, extract::Path, routing::get};
+use axum::{
+    Json, Router,
+    extract::Path,
+    routing::{get, post},
+};
+use serde_json::Value;
 use tokio::{
     fs::{create_dir_all, remove_file, try_exists},
     net::UnixListener,
@@ -56,7 +61,8 @@ impl Server {
         let server_handle = tokio::task::spawn(async move {
             let app = Router::new()
                 .route("/{name}", get(Server::respond))
-                .route("/json/{name}", get(Server::respond_json))
+                .route("/json/{name}", get(Server::respond_get_json))
+                .route("/json", post(Server::respond_post_json))
                 .into_make_service();
 
             if axum::serve(socket, app).await.is_err() {
@@ -73,8 +79,18 @@ impl Server {
         format!("Hello {}", name)
     }
 
-    async fn respond_json(Path(name): Path<String>) -> String {
+    async fn respond_get_json(Path(name): Path<String>) -> String {
         format!("{{\"hello\": \"{}\"}}", name)
+    }
+
+    async fn respond_post_json(Json(body): Json<Value>) -> String {
+        format!(
+            "{{\"hello\": \"{}\"}}",
+            body.get("name")
+                .unwrap_or(&Value::String("Error".into()))
+                .as_str()
+                .unwrap_or("Error")
+        )
     }
 
     pub async fn abort(self) -> Option<ErrorServer> {

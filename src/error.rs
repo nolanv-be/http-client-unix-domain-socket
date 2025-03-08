@@ -9,4 +9,6 @@ pub enum Error {
     ResponseUnsuccessful(String, String),
     #[cfg(feature = "json")]
     ResponseParsing(serde_json::Error),
+    #[cfg(feature = "json")]
+    BodyParsing(serde_json::Error),
 }

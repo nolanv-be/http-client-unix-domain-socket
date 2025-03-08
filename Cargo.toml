@@ -2,7 +2,7 @@
 name = "http_client_unix_domain_socket"
 version = "0.1.0"
 edition = "2024"
-authors = ["Nolan Vanmoortel <git@nolan.contact>"]
+authors = ["Nolan Vanmoortel"]
 description = "A simple HTTP (json) client using UNIX domain socket in rust"
 keywords = ["async", "http", "client", "linux", "json"]
 

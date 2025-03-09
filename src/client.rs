@@ -8,7 +8,7 @@ use hyper_util::rt::TokioIo;
 use std::path::PathBuf;
 use tokio::{net::UnixStream, task::JoinHandle};
 
-pub struct HttpClientUnixDomainSocket<B>
+pub struct ClientUnix<B>
 where
     B: hyper::body::Body + 'static + Send,
     B::Data: Send,
@@ -19,7 +19,7 @@ where
     join_handle: JoinHandle<Error>,
 }
 
-impl<B> HttpClientUnixDomainSocket<B>
+impl<B> ClientUnix<B>
 where
     B: hyper::body::Body + 'static + Send,
     B::Data: Send,
@@ -27,13 +27,13 @@ where
 {
     pub async fn try_new(socket_path: &str) -> Result<Self, Error> {
         let socket_path = PathBuf::from(socket_path);
-        HttpClientUnixDomainSocket::try_connect(socket_path).await
+        ClientUnix::try_connect(socket_path).await
     }
 
     pub async fn try_reconnect(self) -> Result<Self, Error> {
         let socket_path = self.socket_path.clone();
         self.abort().await;
-        HttpClientUnixDomainSocket::try_connect(socket_path).await
+        ClientUnix::try_connect(socket_path).await
     }
 
     pub async fn abort(self) -> Option<Error> {
@@ -55,7 +55,7 @@ where
                 async move { Error::SocketConnectionClosed(connection.await.err()) },
             );
 
-        Ok(HttpClientUnixDomainSocket {
+        Ok(ClientUnix {
             socket_path,
             sender,
             join_handle,
@@ -131,7 +131,7 @@ mod tests {
     async fn server_not_started() {
         let socket_path = make_socket_path_test("client", "server_not_started");
 
-        let http_client = HttpClientUnixDomainSocket::<Body>::try_new(&socket_path).await;
+        let http_client = ClientUnix::<Body>::try_new(&socket_path).await;
         assert!(matches!(
             http_client.err(),
             Some(Error::SocketConnectionInitiation(_))

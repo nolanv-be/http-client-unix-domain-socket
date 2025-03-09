@@ -1,4 +1,4 @@
-use crate::{HttpClientUnixDomainSocket, test_helpers::server::Server};
+use crate::{ClientUnix, test_helpers::server::Server};
 use axum_core::body::Body;
 use http_body_util::BodyExt;
 
@@ -17,14 +17,14 @@ pub async fn response_to_utf8(response: Response<Incoming>) -> Option<String> {
     String::from_utf8(response.to_bytes().to_vec()).ok()
 }
 
-pub async fn make_client_server(test_function: &str) -> (Server, HttpClientUnixDomainSocket<Body>) {
+pub async fn make_client_server(test_function: &str) -> (Server, ClientUnix<Body>) {
     let socket_path = make_socket_path_test("client", test_function);
     let server = Server::try_new(&socket_path)
         .await
         .expect("Server::try_new");
-    let client = HttpClientUnixDomainSocket::<Body>::try_new(&socket_path)
+    let client = ClientUnix::<Body>::try_new(&socket_path)
         .await
-        .expect("HttpClientUnixDomainSocket::try_new");
+        .expect("ClientUnix::try_new");
 
     (server, client)
 }

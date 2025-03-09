@@ -1,10 +1,12 @@
-use crate::{Error, HttpClientUnixDomainSocket};
+use crate::{ClientUnix, Error};
 use axum_core::body::Body;
 use http_body_util::BodyExt;
 use hyper::{Method, Request, StatusCode};
 use serde::{Serialize, de::DeserializeOwned};
 
-impl HttpClientUnixDomainSocket<Body> {
+pub type JsonClientUnix = ClientUnix<Body>;
+
+impl ClientUnix<Body> {
     pub async fn send_request_json<IN: Serialize, OUT: DeserializeOwned>(
         &mut self,
         endpoint: &str,

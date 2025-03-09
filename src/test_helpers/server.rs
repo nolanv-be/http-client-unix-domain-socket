@@ -1,10 +1,9 @@
 use std::path::PathBuf;
 
-use axum::{
-    Json, Router,
-    extract::Path,
-    routing::{get, post},
-};
+#[cfg(feature = "json")]
+use axum::{Json, routing::post};
+use axum::{Router, extract::Path, routing::get};
+#[cfg(feature = "json")]
 use serde_json::Value;
 use tokio::{
     fs::{create_dir_all, remove_file, try_exists},
@@ -59,6 +58,11 @@ impl Server {
         let socket = UnixListener::bind(socket_path.clone()).map_err(ErrorServer::SocketBind)?;
 
         let server_handle = tokio::task::spawn(async move {
+            #[cfg(not(feature = "json"))]
+            let app = Router::new()
+                .route("/{name}", get(Server::respond))
+                .into_make_service();
+            #[cfg(feature = "json")]
             let app = Router::new()
                 .route("/{name}", get(Server::respond))
                 .route("/json/{name}", get(Server::respond_get_json))
@@ -79,10 +83,12 @@ impl Server {
         format!("Hello {}", name)
     }
 
+    #[cfg(feature = "json")]
     async fn respond_get_json(Path(name): Path<String>) -> String {
         format!("{{\"hello\": \"{}\"}}", name)
     }
 
+    #[cfg(feature = "json")]
     async fn respond_post_json(Json(body): Json<Value>) -> String {
         format!(
             "{{\"hello\": \"{}\"}}",

@@ -5,6 +5,11 @@ edition = "2024"
 authors = ["Nolan Vanmoortel"]
 description = "A simple HTTP (json) client using UNIX domain socket in Rust"
 keywords = ["async", "http", "client", "linux", "json"]
+categories = ["web-programming::http-client", "os::unix-apis", "asynchronous"]
+homepage = "https://github.com/nolanv-be/http-client-unix-domain-socket"
+repository = "https://github.com/nolanv-be/http-client-unix-domain-socket"
+readme = "README.md"
+license = "MIT"
 
 [features]
 json = ["serde", "serde_json", "axum"]

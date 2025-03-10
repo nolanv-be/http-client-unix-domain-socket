@@ -46,17 +46,21 @@ pub async fn get_path_not_found() {
 
 ### Simple JSON GET request (feature=json)
 ```rust
-use http_client_unix_domain_socket::{JsonClientUnix, Method, StatusCode};
+use http_client_unix_domain_socket::{ClientUnix, Method, StatusCode};
+#[cfg(feature = "json")]
 use serde::Deserialize;
+#[cfg(feature = "json")]
 use serde_json::Value;
 
+#[cfg(feature = "json")]
 #[derive(Deserialize)]
 struct HelloJson {
     hello: String,
 }
 
+#[cfg(feature = "json")]
 pub async fn get_hello_world() {
-    let mut client = JsonClientUnix::try_new("/tmp/unix.socket")
+    let mut client = ClientUnix::try_new("/tmp/unix.socket")
         .await
         .expect("ClientUnix::try_new");
 
@@ -77,22 +81,27 @@ pub async fn get_hello_world() {
 
 ### Simple JSON POST request (feature=json)
 ```rust
-use http_client_unix_domain_socket::{JsonClientUnix, Method, StatusCode};
+use http_client_unix_domain_socket::{ClientUnix, Method, StatusCode};
+#[cfg(feature = "json")]
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "json")]
 use serde_json::Value;
 
+#[cfg(feature = "json")]
 #[derive(Serialize)]
 struct NameJson {
     name: String,
 }
 
+#[cfg(feature = "json")]
 #[derive(Deserialize)]
 struct HelloJson {
     hello: String,
 }
 
+#[cfg(feature = "json")]
 pub async fn get_hello_world() {
-    let mut client = JsonClientUnix::try_new("/tmp/unix.socket")
+    let mut client = ClientUnix::try_new("/tmp/unix.socket")
         .await
         .expect("ClientUnix::try_new");
 
@@ -113,4 +122,4 @@ pub async fn get_hello_world() {
 }
 ```
 ## Feature flags
-- `json`: Add `JsonClientUnix` which enable automatic parsing of request/response body with `serde_json` and add `Content-Type` header.
+- `json`: Add `send_request_json` which enable automatic parsing of request/response body with `serde_json` and add `Content-Type` header.

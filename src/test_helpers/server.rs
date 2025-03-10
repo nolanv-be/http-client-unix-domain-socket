@@ -3,7 +3,7 @@ use hyper::StatusCode;
 use std::path::PathBuf;
 
 #[cfg(feature = "json")]
-use axum::{Json, routing::post};
+use axum::{Json, response::IntoResponse, routing::post};
 use axum::{Router, extract::Path, routing::get};
 #[cfg(feature = "json")]
 use serde_json::Value;
@@ -69,6 +69,7 @@ impl Server {
                 .route("/{name}", get(Server::respond))
                 .route("/json/{name}", get(Server::respond_get_json))
                 .route("/json", post(Server::respond_post_json))
+                .fallback(Server::respond_404_json)
                 .into_make_service();
 
             if axum::serve(socket, app).await.is_err() {
@@ -94,12 +95,20 @@ impl Server {
     async fn respond_post_json(Json(body): Json<Value>) -> Result<String, (StatusCode, String)> {
         let name = body
             .get("name")
-            .ok_or((StatusCode::BAD_REQUEST, "{\"msg\": \"error\"}".into()))?;
+            .ok_or((StatusCode::BAD_REQUEST, "{\"msg\": \"bad request\"}".into()))?;
 
         Ok(format!(
             "{{\"hello\": \"{}\"}}",
             name.as_str().unwrap_or("Error")
         ))
+    }
+
+    #[cfg(feature = "json")]
+    async fn respond_404_json() -> impl IntoResponse {
+        (
+            StatusCode::NOT_FOUND,
+            "{\"msg\": \"not found\"}".to_string(),
+        )
     }
 
     pub async fn abort(self) -> Option<ErrorServer> {

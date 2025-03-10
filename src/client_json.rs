@@ -33,22 +33,16 @@ impl ClientUnix {
         {
             Ok((status_code, response)) => Ok((
                 status_code,
-                serde_json::from_slice(&response)
-                    .map_err(|e| ErrorAndResponseJson::InternalError(Error::ResponseParsing(e)))?,
+                serde_json::from_slice(&response).map_err(|e| {
+                    ErrorAndResponseJson::InternalError(Error::ResponseParsing(e, response))
+                })?,
             )),
             Err(ErrorAndResponse::InternalError(e)) => Err(ErrorAndResponseJson::InternalError(e)),
             Err(ErrorAndResponse::ResponseUnsuccessful(status_code, response)) => {
-                if response.is_empty() {
-                    return Err(ErrorAndResponseJson::ResponseUnsuccessful(
-                        status_code,
-                        None,
-                    ));
-                }
-
                 Err(ErrorAndResponseJson::ResponseUnsuccessful(
                     status_code,
                     serde_json::from_slice(&response).map_err(|e| {
-                        ErrorAndResponseJson::InternalError(Error::ResponseParsing(e))
+                        ErrorAndResponseJson::InternalError(Error::ResponseParsing(e, response))
                     })?,
                 ))
             }
@@ -62,6 +56,11 @@ mod tests {
     use serde_json::{Value, json};
 
     use crate::{error::ErrorAndResponseJson, test_helpers::util::make_client_server};
+
+    #[derive(Deserialize, Debug)]
+    struct ErrorJson {
+        msg: String,
+    }
 
     #[tokio::test]
     async fn simple_get_request() {
@@ -81,14 +80,14 @@ mod tests {
         let (_, mut client) = make_client_server("simple_get_404_request").await;
 
         let result = client
-            .send_request_json::<(), Value, Value>("/json/nolanv/nop", Method::GET, &[], None)
+            .send_request_json::<(), Value, ErrorJson>("/json/nolanv/nop", Method::GET, &[], None)
             .await;
 
         dbg!(&result);
         assert!(matches!(
             result.err(),
-            Some(ErrorAndResponseJson::ResponseUnsuccessful(status_code, _))
-                if status_code == StatusCode::NOT_FOUND
+            Some(ErrorAndResponseJson::ResponseUnsuccessful(status_code, body))
+                if status_code == StatusCode::NOT_FOUND && body.msg == "not found"
         ));
     }
 
@@ -126,11 +125,6 @@ mod tests {
             nom: String,
         }
 
-        #[derive(Deserialize, Debug)]
-        struct ErrorJson {
-            msg: String,
-        }
-
         let result = client
             .send_request_json::<NameBadJson, Value, ErrorJson>(
                 "/json",
@@ -144,8 +138,8 @@ mod tests {
 
         assert!(matches!(
             result.err(),
-            Some(ErrorAndResponseJson::ResponseUnsuccessful(status_code, Some(body)))
-                if status_code == StatusCode::BAD_REQUEST && body.msg == "error"
+            Some(ErrorAndResponseJson::ResponseUnsuccessful(status_code, body))
+                if status_code == StatusCode::BAD_REQUEST && body.msg == "bad request"
         ));
     }
 }

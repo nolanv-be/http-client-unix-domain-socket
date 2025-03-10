@@ -11,7 +11,7 @@ pub enum Error {
     RequestBuild(hyper::http::Error),
     ResponseCollect(hyper::Error),
     #[cfg(feature = "json")]
-    ResponseParsing(serde_json::Error),
+    ResponseParsing(serde_json::Error, Vec<u8>),
     #[cfg(feature = "json")]
     BodyParsing(serde_json::Error),
 }
@@ -26,5 +26,5 @@ pub enum ErrorAndResponse {
 #[derive(Debug)]
 pub enum ErrorAndResponseJson<ERR: DeserializeOwned> {
     InternalError(Error),
-    ResponseUnsuccessful(StatusCode, Option<ERR>),
+    ResponseUnsuccessful(StatusCode, ERR),
 }

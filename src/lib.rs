@@ -6,6 +6,7 @@ mod error;
 pub mod test_helpers;
 
 pub use client::ClientUnix;
+#[cfg(feature = "json")]
 pub use client_json::JsonClientUnix;
 pub use error::Error;
 pub use hyper::Method;

@@ -113,4 +113,4 @@ pub async fn get_hello_world() {
 }
 ```
 ## Feature flags
-- `json`: Add `JsonClientUnix` which enable automatic parsing of request/response body with `serde_json` and add `Content-type` header.
+- `json`: Add `JsonClientUnix` which enable automatic parsing of request/response body with `serde_json` and add `Content-Type` header.

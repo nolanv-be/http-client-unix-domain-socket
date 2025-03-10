@@ -66,13 +66,13 @@ mod tests {
     async fn simple_get_request() {
         let (_, mut client) = make_client_server("simple_get_request").await;
 
-        let response = client
+        let (status_code, response) = client
             .send_request_json::<(), Value, Value>("/json/nolanv", Method::GET, &[], None)
             .await
             .expect("client.send_request_json");
 
-        assert_eq!(response.0, StatusCode::OK);
-        assert_eq!(response.1.get("hello"), Some(&json!("nolanv")))
+        assert_eq!(status_code, StatusCode::OK);
+        assert_eq!(response.get("hello"), Some(&json!("nolanv")))
     }
 
     #[tokio::test]
@@ -100,8 +100,13 @@ mod tests {
             name: String,
         }
 
-        let response = client
-            .send_request_json::<NameJson, Value, Value>(
+        #[derive(Deserialize)]
+        struct HelloJson {
+            hello: String,
+        }
+
+        let (status_code, response) = client
+            .send_request_json::<NameJson, HelloJson, Value>(
                 "/json",
                 Method::POST,
                 &[],
@@ -112,8 +117,8 @@ mod tests {
             .await
             .expect("client.send_request_json");
 
-        assert_eq!(response.0, StatusCode::OK);
-        assert_eq!(response.1.get("hello"), Some(&json!("nolanv")))
+        assert_eq!(status_code, StatusCode::OK);
+        assert_eq!(response.hello, "nolanv")
     }
 
     #[tokio::test]

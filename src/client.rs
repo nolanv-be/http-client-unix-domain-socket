@@ -122,7 +122,8 @@ mod tests {
 
         assert!(matches!(
             result.err(),
-            Some(ErrorAndResponse::ResponseUnsuccessful(status_code, _)) if status_code == StatusCode::NOT_FOUND
+            Some(ErrorAndResponse::ResponseUnsuccessful(status_code, _))
+                if status_code == StatusCode::NOT_FOUND
         ));
     }
 
@@ -161,7 +162,8 @@ mod tests {
         let response_result = client.send_request("/nolanv", Method::GET, &[], None).await;
         assert!(matches!(
             response_result.err(),
-                         Some(ErrorAndResponse::InternalError(Error::SendRequest(e))) if e.is_canceled()
+            Some(ErrorAndResponse::InternalError(Error::SendRequest(e)))
+                if e.is_canceled()
         ));
 
         let _ = Server::try_new(&make_socket_path_test("client", "server_stopped"))

@@ -26,5 +26,5 @@ pub enum ErrorAndResponse {
 #[derive(Debug)]
 pub enum ErrorAndResponseJson<ERR: DeserializeOwned> {
     InternalError(Error),
-    ResponseUnsuccessful(StatusCode, ERR),
+    ResponseUnsuccessful(StatusCode, Option<ERR>),
 }

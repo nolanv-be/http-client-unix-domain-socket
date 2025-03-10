@@ -38,6 +38,13 @@ impl ClientUnix {
             )),
             Err(ErrorAndResponse::InternalError(e)) => Err(ErrorAndResponseJson::InternalError(e)),
             Err(ErrorAndResponse::ResponseUnsuccessful(status_code, response)) => {
+                if response.is_empty() {
+                    return Err(ErrorAndResponseJson::ResponseUnsuccessful(
+                        status_code,
+                        None,
+                    ));
+                }
+
                 Err(ErrorAndResponseJson::ResponseUnsuccessful(
                     status_code,
                     serde_json::from_slice(&response).map_err(|e| {
@@ -67,6 +74,22 @@ mod tests {
 
         assert_eq!(response.0, StatusCode::OK);
         assert_eq!(response.1.get("hello"), Some(&json!("nolanv")))
+    }
+
+    #[tokio::test]
+    async fn simple_get_404_request() {
+        let (_, mut client) = make_client_server("simple_get_404_request").await;
+
+        let result = client
+            .send_request_json::<(), Value, Value>("/json/nolanv/nop", Method::GET, &[], None)
+            .await;
+
+        dbg!(&result);
+        assert!(matches!(
+            result.err(),
+            Some(ErrorAndResponseJson::ResponseUnsuccessful(status_code, _))
+                if status_code == StatusCode::NOT_FOUND
+        ));
     }
 
     #[tokio::test]
@@ -121,7 +144,8 @@ mod tests {
 
         assert!(matches!(
             result.err(),
-                         Some(ErrorAndResponseJson::ResponseUnsuccessful(status_code, body)) if status_code == StatusCode::BAD_REQUEST && body.msg == "error"
+            Some(ErrorAndResponseJson::ResponseUnsuccessful(status_code, Some(body)))
+                if status_code == StatusCode::BAD_REQUEST && body.msg == "error"
         ));
     }
 }

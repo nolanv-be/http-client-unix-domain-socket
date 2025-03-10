@@ -22,7 +22,7 @@ impl ClientUnix {
         let body_request = match body_request {
             Some(body_request) => Body::from(
                 serde_json::to_vec(body_request)
-                    .map_err(|e| ErrorAndResponseJson::InternalError(Error::BodyParsing(e)))?,
+                    .map_err(|e| ErrorAndResponseJson::InternalError(Error::RequestParsing(e)))?,
             ),
             None => Body::empty(),
         };

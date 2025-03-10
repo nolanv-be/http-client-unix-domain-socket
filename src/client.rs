@@ -74,7 +74,7 @@ impl ClientUnix {
             .sender
             .send_request(request)
             .await
-            .map_err(|e| ErrorAndResponse::InternalError(Error::SendRequest(e)))?;
+            .map_err(|e| ErrorAndResponse::InternalError(Error::RequestSend(e)))?;
 
         let status_code = response.status();
         let body_response = response
@@ -162,7 +162,7 @@ mod tests {
         let response_result = client.send_request("/nolanv", Method::GET, &[], None).await;
         assert!(matches!(
             response_result.err(),
-            Some(ErrorAndResponse::InternalError(Error::SendRequest(e)))
+            Some(ErrorAndResponse::InternalError(Error::RequestSend(e)))
                 if e.is_canceled()
         ));
 

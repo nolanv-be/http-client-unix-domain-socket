@@ -112,3 +112,5 @@ pub async fn get_hello_world() {
     assert_eq!(response.hello, "nolanv");
 }
 ```
+## Feature flags
+- `json`: Add `JsonClientUnix` which enable automatic parsing of request/response body with `serde_json` and add `Content-type` header.

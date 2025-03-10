@@ -1,3 +1,5 @@
+#[cfg(feature = "json")]
+use hyper::StatusCode;
 use std::path::PathBuf;
 
 #[cfg(feature = "json")]
@@ -89,14 +91,15 @@ impl Server {
     }
 
     #[cfg(feature = "json")]
-    async fn respond_post_json(Json(body): Json<Value>) -> String {
-        format!(
+    async fn respond_post_json(Json(body): Json<Value>) -> Result<String, (StatusCode, String)> {
+        let name = body
+            .get("name")
+            .ok_or((StatusCode::BAD_REQUEST, "{\"msg\": \"error\"}".into()))?;
+
+        Ok(format!(
             "{{\"hello\": \"{}\"}}",
-            body.get("name")
-                .unwrap_or(&Value::String("Error".into()))
-                .as_str()
-                .unwrap_or("Error")
-        )
+            name.as_str().unwrap_or("Error")
+        ))
     }
 
     pub async fn abort(self) -> Option<ErrorServer> {

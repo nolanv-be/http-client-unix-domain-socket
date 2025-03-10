@@ -3,21 +3,21 @@ name = "http-client-unix-domain-socket"
 version = "0.1.0"
 edition = "2024"
 authors = ["Nolan Vanmoortel"]
-description = "A simple HTTP (json) client using UNIX domain socket in rust"
+description = "A simple HTTP (json) client using UNIX domain socket in Rust"
 keywords = ["async", "http", "client", "linux", "json"]
 
 [features]
-json = ["serde", "serde_json", "axum-core", "axum"]
+json = ["serde", "serde_json", "axum"]
 
 [dependencies]
 hyper-util = { version = "0.1.10", features = ["tokio"] }
 tokio = { version = "1.43.0", features = ["rt", "net"] }
 hyper = { version = "1.6.0", features = ["http1", "client"] }
 http-body-util = "0.1.2"
+axum-core = "0.5.0"
 # JSON
 serde = { version = "1.0.218", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.139", optional = true }
-axum-core = { version = "0.5.0", optional = true }
 axum = { version = "0.8.1", optional = true, default-features = false}
 
 

@@ -50,6 +50,23 @@ impl std::fmt::Display for Error {
         }
     }
 }
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Error::SocketConnectionInitiation(error) => Some(error),
+            Error::SocketConnectionClosed(Some(error)) => Some(error),
+            Error::SocketConnectionClosed(None) => None,
+            Error::Handhsake(error) => Some(error),
+            Error::RequestBuild(error) => Some(error),
+            Error::RequestSend(error) => Some(error),
+            #[cfg(feature = "json")]
+            Error::RequestParsing(error) => Some(error),
+            Error::ResponseCollect(error) => Some(error),
+            #[cfg(feature = "json")]
+            Error::ResponseParsing(error) => Some(error),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum ErrorAndResponse {
@@ -69,6 +86,14 @@ impl std::fmt::Display for ErrorAndResponse {
                     status_code
                 )
             }
+        }
+    }
+}
+impl std::error::Error for ErrorAndResponse {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            ErrorAndResponse::InternalError(error) => error.source(),
+            ErrorAndResponse::ResponseUnsuccessful(_, _) => None,
         }
     }
 }
@@ -93,6 +118,15 @@ impl<ERR: DeserializeOwned> std::fmt::Display for ErrorAndResponseJson<ERR> {
                     status_code
                 )
             }
+        }
+    }
+}
+#[cfg(feature = "json")]
+impl<ERR: DeserializeOwned + std::fmt::Debug> std::error::Error for ErrorAndResponseJson<ERR> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            ErrorAndResponseJson::InternalError(error) => error.source(),
+            ErrorAndResponseJson::ResponseUnsuccessful(_, _) => None,
         }
     }
 }

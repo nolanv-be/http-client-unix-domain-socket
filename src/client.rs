@@ -13,6 +13,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use std::path::PathBuf;
 use tokio::{net::UnixStream, task::JoinHandle};
 
+/// A simple HTTP (json) client using UNIX domain socket in Rust
 #[derive(Debug)]
 pub struct ClientUnix {
     socket_path: PathBuf,
@@ -21,11 +22,42 @@ pub struct ClientUnix {
 }
 
 impl ClientUnix {
+    /// Create a new HTTP client and try to connect to it.
+    ///
+    /// # Example
+    /// ```rust
+    /// use http_client_unix_domain_socket::ClientUnix;
+    ///
+    /// pub async fn new_client() {
+    ///     ClientUnix::try_new("/tmp/unix.socket").await.expect("ClientUnix::try_new");
+    /// }
+    /// ```
     pub async fn try_new(socket_path: &str) -> Result<Self, Error> {
         let socket_path = PathBuf::from(socket_path);
         ClientUnix::try_connect(socket_path).await
     }
 
+    /// Reconnect to an existing ClientUnix.
+    ///
+    /// Sometimes the server to which the client is connected may reboot, causing the client to disconnect. For simplicity, no automatic reconnection is implemented - it must be manually performed by calling this function.
+    /// An example error that may occur during server disconnection is `ErrorAndResponse::InternalError(Error::RequestSend(e)) if e.is_canceled()`.
+    /// # Example
+    /// ```rust
+    /// use http_client_unix_domain_socket::{ClientUnix, Method, Error, ErrorAndResponse};
+    ///
+    /// pub async fn reconnect_after_failure() {
+    ///     let mut client = ClientUnix::try_new("/tmp/unix.socket").await.expect("ClientUnix::try_new");
+    ///     let response_result = client.send_request("/nolanv", Method::GET, &[], None).await;
+    ///
+    ///     if(matches!(
+    ///         response_result.err(),
+    ///         Some(ErrorAndResponse::InternalError(Error::RequestSend(e)))
+    ///             if e.is_canceled()
+    ///     )){
+    ///         client = client.try_reconnect().await.expect("client.try_reconnect");
+    ///     }
+    /// }
+    /// ```
     pub async fn try_reconnect(self) -> Result<Self, Error> {
         let socket_path = self.socket_path.clone();
         self.abort().await;
@@ -207,13 +239,39 @@ mod tests {
         let response_result = client.send_request("/nolanv", Method::GET, &[], None).await;
         assert!(matches!(
             response_result.err(),
-            Some(ErrorAndResponse::InternalError(Error::RequestSend(e)))
-                if e.is_canceled()
+                         Some(ErrorAndResponse::InternalError(Error::RequestSend(e)))
+                         if e.is_canceled()
         ));
 
         let _ = Server::try_new(&make_socket_path_test("client", "server_stopped"))
             .await
             .expect("Server::try_new");
+        let mut http_client = client.try_reconnect().await.expect("client.try_reconnect");
+
+        let (status_code, response) = http_client
+            .send_request("/nolanv", Method::GET, &[], None)
+            .await
+            .expect("client.send_request");
+
+        assert_eq!(status_code, StatusCode::OK);
+        assert_eq!(response, "Hello nolanv".as_bytes())
+    }
+
+    #[tokio::test]
+    async fn server_rebooted() {
+        let (server, mut client) = make_client_server("server_rebooted").await;
+        server.abort().await;
+
+        let _ = Server::try_new(&make_socket_path_test("client", "server_rebooted"))
+            .await
+            .expect("Server::try_new");
+
+        let response_result = client.send_request("/nolanv", Method::GET, &[], None).await;
+        assert!(matches!(
+            response_result.err(),
+                         Some(ErrorAndResponse::InternalError(Error::RequestSend(e)))
+                         if e.is_canceled()
+        ));
         let mut http_client = client.try_reconnect().await.expect("client.try_reconnect");
 
         let (status_code, response) = http_client

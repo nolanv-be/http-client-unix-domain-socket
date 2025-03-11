@@ -121,16 +121,15 @@ impl ClientUnix {
         {
             Ok((status_code, response)) => Ok((
                 status_code,
-                serde_json::from_slice(&response).map_err(|e| {
-                    ErrorAndResponseJson::InternalError(Error::ResponseParsing(e, response))
-                })?,
+                serde_json::from_slice(&response)
+                    .map_err(|e| ErrorAndResponseJson::InternalError(Error::ResponseParsing(e)))?,
             )),
             Err(ErrorAndResponse::InternalError(e)) => Err(ErrorAndResponseJson::InternalError(e)),
             Err(ErrorAndResponse::ResponseUnsuccessful(status_code, response)) => {
                 Err(ErrorAndResponseJson::ResponseUnsuccessful(
                     status_code,
                     serde_json::from_slice(&response).map_err(|e| {
-                        ErrorAndResponseJson::InternalError(Error::ResponseParsing(e, response))
+                        ErrorAndResponseJson::InternalError(Error::ResponseParsing(e))
                     })?,
                 ))
             }

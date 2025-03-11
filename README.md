@@ -1,6 +1,8 @@
 # http-client-unix-domain-socket
 
-A simple HTTP (json) client using UNIX domain socket in Rust
+> A simple HTTP (json) client using UNIX domain socket in Rust
+
+This Rust crate provides a Unix socket HTTP client for asynchronous communication with local servers. It enables seamless interaction via Unix domain sockets using Tokio and Hyper, supporting raw HTTP requests and optional JSON serialization through feature flags. The client handles connection management, request building, response parsing, and error handling, including reconnection logic.
 
 ## Examples
 

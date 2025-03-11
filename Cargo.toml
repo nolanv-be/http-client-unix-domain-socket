@@ -9,7 +9,7 @@ categories = ["web-programming::http-client", "os::unix-apis", "asynchronous"]
 homepage = "https://github.com/nolanv-be/http-client-unix-domain-socket"
 repository = "https://github.com/nolanv-be/http-client-unix-domain-socket"
 readme = "README.md"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 
 [features]
 json = ["serde", "serde_json", "axum"]

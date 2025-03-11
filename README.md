@@ -49,18 +49,14 @@ pub async fn get_path_not_found() {
 ### Simple JSON GET request (feature=json)
 ```rust
 use http_client_unix_domain_socket::{ClientUnix, Method, StatusCode};
-#[cfg(feature = "json")]
 use serde::Deserialize;
-#[cfg(feature = "json")]
 use serde_json::Value;
 
-#[cfg(feature = "json")]
 #[derive(Deserialize)]
 struct HelloJson {
     hello: String,
 }
 
-#[cfg(feature = "json")]
 pub async fn get_hello_world() {
     let mut client = ClientUnix::try_new("/tmp/unix.socket")
         .await
@@ -84,24 +80,19 @@ pub async fn get_hello_world() {
 ### Simple JSON POST request (feature=json)
 ```rust
 use http_client_unix_domain_socket::{ClientUnix, Method, StatusCode};
-#[cfg(feature = "json")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "json")]
 use serde_json::Value;
 
-#[cfg(feature = "json")]
 #[derive(Serialize)]
 struct NameJson {
     name: String,
 }
 
-#[cfg(feature = "json")]
 #[derive(Deserialize)]
 struct HelloJson {
     hello: String,
 }
 
-#[cfg(feature = "json")]
 pub async fn get_hello_world() {
     let mut client = ClientUnix::try_new("/tmp/unix.socket")
         .await

@@ -6,74 +6,89 @@
 //!
 //! ## Examples
 //!
-//! ### Simple GET request
+//! ### HTTP GET
 //! ```rust
-//! use http_client_unix_domain_socket::{ClientUnix, Method, StatusCode};
+//! use http_client_unix_domain_socket::{ClientUnix, Method, StatusCode, ErrorAndResponse};
 //!
 //! pub async fn get_hello_world() {
 //!     let mut client = ClientUnix::try_new("/tmp/unix.socket")
 //!         .await
 //!         .expect("ClientUnix::try_new");
 //!
-//!     let (status_code, response) = client
-//!         .send_request("/nolanv", Method::GET, &[], None)
+//!     match client
+//!         .send_request("/nolanv", Method::GET, &vec![("Host", "localhost")], None)
 //!         .await
-//!         .expect("client.send_request");
+//!     {
+//!         Err(ErrorAndResponse::ResponseUnsuccessful(status_code, response)) => {
+//!             assert!(status_code == StatusCode::NOT_FOUND);
+//!             assert!(response == "not found".as_bytes());
+//!         }
 //!
-//!     assert_eq!(status_code, StatusCode::OK);
-//!     assert_eq!(response, "Hello nolanv".as_bytes());
+//!         Ok((status_code, response)) => {
+//!             assert_eq!(status_code, StatusCode::OK);
+//!             assert_eq!(response, "Hello nolanv".as_bytes());
+//!         }
+//!
+//!         Err(_) => panic!("Something went wrong")
+//!     }
 //! }
 //! ```
-//! ### Simple JSON POST request (feature=json)
+//! ### HTTP POST JSON **(feature = json)**
 //! ```rust
-//! use http_client_unix_domain_socket::{ClientUnix, Method, StatusCode};
-//! #[cfg(feature = "json")]
+//! use http_client_unix_domain_socket::{ClientUnix, Method, StatusCode, ErrorAndResponseJson};
 //! use serde::{Deserialize, Serialize};
-//! #[cfg(feature = "json")]
-//! use serde_json::Value;
 //!
-//! #[cfg(feature = "json")]
 //! #[derive(Serialize)]
 //! struct NameJson {
 //!     name: String,
 //! }
 //!
-//! #[cfg(feature = "json")]
 //! #[derive(Deserialize)]
 //! struct HelloJson {
 //!     hello: String,
 //! }
 //!
-//! #[cfg(feature = "json")]
-//! pub async fn get_hello_world() {
+//! #[derive(Deserialize, Debug)]
+//! struct ErrorJson {
+//!     msg: String,
+//! }
+//!
+//! pub async fn post_hello_world() {
 //!     let mut client = ClientUnix::try_new("/tmp/unix.socket")
 //!         .await
 //!         .expect("ClientUnix::try_new");
 //!
-//!     let (status_code, response) = client
-//!         .send_request_json::<NameJson, HelloJson, Value>(
+//!     match client
+//!         .send_request_json::<NameJson, HelloJson, ErrorJson>(
 //!             "/nolanv",
 //!             Method::POST,
-//!             &[],
-//!             Some(&NameJson {
-//!                 name: "nolanv".into(),
-//!             })
-//!         )
+//!             &vec![("Host", "localhost")],
+//!             Some(&NameJson { name: "nolanv".into() }))
 //!         .await
-//!         .expect("client.send_request_json");
+//!     {
+//!         Err(ErrorAndResponseJson::ResponseUnsuccessful(status_code, response)) => {
+//!             assert!(status_code == StatusCode::BAD_REQUEST);
+//!             assert!(response.msg == "bad request");
+//!         }
 //!
-//!     assert_eq!(status_code, StatusCode::OK);
-//!     assert_eq!(response.hello, "nolanv");
+//!         Ok((status_code, response)) => {
+//!             assert_eq!(status_code, StatusCode::OK);
+//!             assert_eq!(response.hello, "nolanv");
+//!         }
+//!
+//!         Err(_) => panic!("Something went wrong")
+//!     }
 //! }
 //! ```
 //! ## Feature flags
-//! - `json`: Add `send_request_json` which enable automatic parsing of request/response body with `serde_json` and add `Content-Type` header.
+//! - `json`(default): Add `send_request_json` which enable automatic parsing of request/response body with `serde_json` and add `Content-Type` header.
 
 mod client;
 mod error;
 #[cfg(test)]
 pub mod test_helpers;
 
+pub use axum_core::body::Body;
 pub use client::ClientUnix;
 #[cfg(feature = "json")]
 pub use error::ErrorAndResponseJson;

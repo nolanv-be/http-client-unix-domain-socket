@@ -37,10 +37,10 @@ impl ClientUnix {
         ClientUnix::try_connect(socket_path).await
     }
 
-    /// Reconnect to an existing ClientUnix.
+    /// Reconnect to an existing [ClientUnix].
     ///
     /// Sometimes the server to which the client is connected may reboot, causing the client to disconnect. For simplicity, no automatic reconnection is implemented - it must be manually performed by calling this function.
-    /// An example error that may occur during server disconnection is `ErrorAndResponse::InternalError(Error::RequestSend(e)) if e.is_canceled()`.
+    /// The error will be probably trigger during the [ClientUnix::send_request](or [ClientUnix::send_request_json]) with this error [Error::RequestSend].
     /// # Example
     /// ```rust
     /// use http_client_unix_domain_socket::{ClientUnix, Method, Error, ErrorAndResponse};
@@ -64,6 +64,9 @@ impl ClientUnix {
         ClientUnix::try_connect(socket_path).await
     }
 
+    /// Abort the [ClientUnix] connection [JoinHandle].
+    ///
+    /// Used for stopping the connection [JoinHandle]([tokio::task]), it's also used for [ClientUnix::try_reconnect]. The returned [Error] can be used to know if it was stopped without any error.
     pub async fn abort(self) -> Option<Error> {
         self.join_handle.abort();
         self.join_handle.await.ok()
@@ -90,6 +93,55 @@ impl ClientUnix {
         })
     }
 
+    /// Send a raw HTTP request.
+    ///
+    /// The [ClientUnix::send_request] method allows sending an HTTP request without serializing it. This method can be useful when communicating using a format other than JSON, or for endpoints that don’t return responses adhering to the JSON format. [Error] are wrapped in an Enum [ErrorAndResponse] that includes both [ErrorAndResponse::InternalError] and HTTP response [ErrorAndResponse::ResponseUnsuccessful].
+    /// # Examples
+    /// ## HTTP GET
+    /// ```rust
+    /// use http_client_unix_domain_socket::{ClientUnix, Method, StatusCode, ErrorAndResponse};
+    ///
+    /// pub async fn get_hello_world() {
+    ///     let mut client = ClientUnix::try_new("/tmp/unix.socket")
+    ///         .await
+    ///         .expect("ClientUnix::try_new");
+    ///
+    ///     match client
+    ///         .send_request("/nolanv", Method::GET, &vec![("Host", "localhost")], None)
+    ///         .await
+    ///     {
+    ///         Err(ErrorAndResponse::ResponseUnsuccessful(status_code, response)) => {
+    ///             assert!(status_code == StatusCode::NOT_FOUND);
+    ///             assert!(response == "not found".as_bytes());
+    ///         }
+    ///
+    ///         Ok((status_code, response)) => {
+    ///             assert_eq!(status_code, StatusCode::OK);
+    ///             assert_eq!(response, "Hello nolanv".as_bytes());
+    ///         }
+    ///
+    ///         Err(_) => panic!("Something went wrong")
+    ///     }
+    /// }
+    /// ```
+    /// ## HTTP POST
+    /// ```rust
+    /// use http_client_unix_domain_socket::{ClientUnix, Method, StatusCode, Body};
+    ///
+    /// pub async fn post_hello_world() {
+    ///     let mut client = ClientUnix::try_new("/tmp/unix.socket")
+    ///         .await
+    ///         .expect("ClientUnix::try_new");
+    ///
+    ///     let (status_code, response) = client
+    ///         .send_request("/", Method::POST, &[], Some(Body::from("nolanv")))
+    ///         .await
+    ///         .expect("client.send_request");
+    ///
+    ///     assert_eq!(status_code, StatusCode::OK);
+    ///     assert_eq!(response, "Hello nolanv".as_bytes());
+    /// }
+    /// ```
     pub async fn send_request(
         &mut self,
         endpoint: &str,
@@ -129,6 +181,57 @@ impl ClientUnix {
         Ok((status_code, body_response.to_vec()))
     }
 
+    /// Send JSON HTTP request **(feature = json)**
+    ///
+    /// Use [ClientUnix::send_request], adding automatically the "Content-Type" header and handling JSON (de)serialization for both the request body and response. This method does not use the same [Error] Enum, enabling typed error responses instead via [ErrorAndResponseJson].
+    /// # Examples
+    /// ## HTTP POST JSON **(feature = json)**
+    /// ```rust
+    /// use http_client_unix_domain_socket::{ClientUnix, Method, StatusCode, ErrorAndResponseJson};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Serialize)]
+    /// struct NameJson {
+    ///     name: String,
+    /// }
+    ///
+    /// #[derive(Deserialize)]
+    /// struct HelloJson {
+    ///     hello: String,
+    /// }
+    ///
+    /// #[derive(Deserialize, Debug)]
+    /// struct ErrorJson {
+    ///     msg: String,
+    /// }
+    ///
+    /// pub async fn post_hello_world() {
+    ///     let mut client = ClientUnix::try_new("/tmp/unix.socket")
+    ///         .await
+    ///         .expect("ClientUnix::try_new");
+    ///
+    ///     match client
+    ///         .send_request_json::<NameJson, HelloJson, ErrorJson>(
+    ///             "/nolanv",
+    ///             Method::POST,
+    ///             &vec![("Host", "localhost")],
+    ///             Some(&NameJson { name: "nolanv".into() }))
+    ///         .await
+    ///     {
+    ///         Err(ErrorAndResponseJson::ResponseUnsuccessful(status_code, response)) => {
+    ///             assert!(status_code == StatusCode::BAD_REQUEST);
+    ///             assert!(response.msg == "bad request");
+    ///         }
+    ///
+    ///         Ok((status_code, response)) => {
+    ///             assert_eq!(status_code, StatusCode::OK);
+    ///             assert_eq!(response.hello, "nolanv");
+    ///         }
+    ///
+    ///         Err(_) => panic!("Something went wrong")
+    ///     }
+    /// }
+    /// ```
     #[cfg(feature = "json")]
     pub async fn send_request_json<IN: Serialize, OUT: DeserializeOwned, ERR: DeserializeOwned>(
         &mut self,

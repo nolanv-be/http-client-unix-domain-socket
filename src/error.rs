@@ -2,6 +2,7 @@ use hyper::StatusCode;
 #[cfg(feature = "json")]
 use serde::de::DeserializeOwned;
 
+/// Internal Error, wrapping other source of error.
 #[derive(Debug)]
 pub enum Error {
     SocketConnectionInitiation(std::io::Error),
@@ -68,6 +69,7 @@ impl std::error::Error for Error {
     }
 }
 
+/// Error used by [crate::ClientUnix::send_request] to be able to return unsuccessful HTTP error body.
 #[derive(Debug)]
 pub enum ErrorAndResponse {
     InternalError(Error),
@@ -98,6 +100,7 @@ impl std::error::Error for ErrorAndResponse {
     }
 }
 
+/// Error used by [crate::ClientUnix::send_request_json] to be able to return unsuccessful HTTP error typed body **(feature = json)**.
 #[cfg(feature = "json")]
 #[derive(Debug)]
 pub enum ErrorAndResponseJson<ERR: DeserializeOwned> {

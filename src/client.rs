@@ -13,6 +13,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use std::path::PathBuf;
 use tokio::{net::UnixStream, task::JoinHandle};
 
+#[derive(Debug)]
 pub struct ClientUnix {
     socket_path: PathBuf,
     sender: SendRequest<Body>,

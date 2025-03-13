@@ -188,7 +188,7 @@ dependencies = [
 
 [[package]]
 name = "http-client-unix-domain-socket"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "axum",
  "axum-core",

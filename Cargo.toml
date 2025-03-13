@@ -1,6 +1,6 @@
 [package]
 name = "http-client-unix-domain-socket"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["Nolan Vanmoortel"]
 description = "A simple HTTP (json) client using UNIX domain socket in Rust"

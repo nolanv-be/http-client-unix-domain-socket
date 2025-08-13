@@ -1,16 +1,16 @@
 #[cfg(feature = "json")]
 use crate::error::ErrorAndResponseJson;
-use crate::{Error, error::ErrorAndResponse};
+use crate::{error::ErrorAndResponse, Error};
 use axum_core::body::Body;
 use http_body_util::BodyExt;
 use hyper::{
-    Method, Request, StatusCode,
     client::conn::http1::{self, SendRequest},
+    Method, Request, StatusCode,
 };
 use hyper_util::rt::TokioIo;
 #[cfg(feature = "json")]
-use serde::{Serialize, de::DeserializeOwned};
-use std::path::PathBuf;
+use serde::{de::DeserializeOwned, Serialize};
+use std::path::{Path, PathBuf};
 use tokio::{net::UnixStream, task::JoinHandle};
 
 /// A simple HTTP (json) client using UNIX domain socket in Rust
@@ -72,9 +72,9 @@ impl ClientUnix {
         self.join_handle.await.ok()
     }
 
-    async fn try_connect(socket_path: PathBuf) -> Result<Self, Error> {
+    pub async fn try_connect(socket_path: impl AsRef<Path>) -> Result<Self, Error> {
         let stream = TokioIo::new(
-            UnixStream::connect(socket_path.clone())
+            UnixStream::connect(socket_path.as_ref().to_path_buf())
                 .await
                 .map_err(Error::SocketConnectionInitiation)?,
         );
@@ -87,7 +87,7 @@ impl ClientUnix {
             );
 
         Ok(ClientUnix {
-            socket_path,
+            socket_path: socket_path.as_ref().to_path_buf(),
             sender,
             join_handle,
         })
@@ -392,7 +392,7 @@ mod tests {
 mod json_tests {
     use hyper::{Method, StatusCode};
     use serde::{Deserialize, Serialize};
-    use serde_json::{Value, json};
+    use serde_json::{json, Value};
 
     use crate::{error::ErrorAndResponseJson, test_helpers::util::make_client_server};
 

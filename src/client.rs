@@ -10,7 +10,7 @@ use hyper::{
 use hyper_util::rt::TokioIo;
 #[cfg(feature = "json")]
 use serde::{Serialize, de::DeserializeOwned};
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use tokio::{net::UnixStream, task::JoinHandle};
 
 /// A simple HTTP (json) client using UNIX domain socket in Rust
@@ -32,8 +32,8 @@ impl ClientUnix {
     ///     ClientUnix::try_new("/tmp/unix.socket").await.expect("ClientUnix::try_new");
     /// }
     /// ```
-    pub async fn try_new(socket_path: &str) -> Result<Self, Error> {
-        let socket_path = PathBuf::from(socket_path);
+    pub async fn try_new(socket_path: impl AsRef<Path>) -> Result<Self, Error> {
+        let socket_path = PathBuf::from(socket_path.as_ref().to_path_buf());
         ClientUnix::try_connect(socket_path).await
     }
 
